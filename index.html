@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="zh-TW" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>醫院法律分類配對遊戲</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Noto Sans TC', sans-serif; }
+    html, body { height: 100%; margin: 0; }
+
+    .card-item {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: grab;
+      user-select: none;
+    }
+    .card-item:active { cursor: grabbing; }
+    .card-item.dragging {
+      opacity: 0.5;
+      transform: scale(0.95);
+    }
+
+    .drop-zone {
+      transition: all 0.25s ease;
+      min-height: 44px;
+    }
+    .drop-zone.drag-over {
+      border-color: var(--primary-action);
+      background: rgba(99, 102, 241, 0.08);
+      transform: scale(1.02);
+    }
+    .drop-zone.filled {
+      border-style: solid;
+    }
+
+    .result-correct {
+      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    .result-wrong {
+      animation: shakeIn 0.5s ease forwards;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes shakeIn {
+      0% { transform: translateX(-8px); opacity: 0; }
+      25% { transform: translateX(6px); }
+      50% { transform: translateX(-4px); }
+      75% { transform: translateX(2px); }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes fadeUp {
+      0% { transform: translateY(20px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes scoreReveal {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .fade-up {
+      animation: fadeUp 0.5s ease forwards;
+    }
+    .score-reveal {
+      animation: scoreReveal 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    .category-tag {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full">
+  <div id="app-wrapper" class="h-full w-full overflow-auto" style="background: #0f172a;"><!-- Header -->
+   <header class="sticky top-0 z-30" style="background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid #1e293b;">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+     <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background: #6366f1;"><i data-lucide="hospital" style="width:20px;height:20px;color:#fff;"></i>
+      </div>
+      <h1 id="game-title" class="text-lg font-bold" style="color: #f1f5f9;">醫院法律分類配對遊戲</h1>
+     </div>
+     <div id="progress-badge" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold" style="background: #1e293b; color: #94a3b8;"><i data-lucide="target" style="width:14px;height:14px;"></i> <span id="progress-text">0 / 16</span>
+     </div>
+    </div>
+   </header>
+   <main class="max-w-5xl mx-auto px-4 py-6" id="main-content"><!-- Instructions -->
+    <div id="instructions" class="mb-5 p-4 rounded-xl" style="background: #1e293b; border: 1px solid #334155;">
+     <div class="flex items-start gap-3">
+      <div class="mt-0.5">
+       <i data-lucide="info" style="width:18px;height:18px;color:#6366f1;"></i>
+      </div>
+      <div>
+       <p class="text-sm font-medium" style="color: #e2e8f0;">遊戲說明</p>
+       <p class="text-xs mt-1" style="color: #94a3b8;">將右側的<strong style="color:#c4b5fd;">法律分類標籤</strong>拖放到對應的醫院欄位中，全部配對完成後按下送出按鈕查看成績。</p>
+      </div>
+     </div>
+    </div><!-- Category Legend -->
+    <div class="mb-5 flex flex-wrap gap-2"><span class="category-tag" style="background:#6366f1; color:#fff;">公立醫療機構</span> <span class="category-tag" style="background:#f59e0b; color:#1a1a2e;">醫療法人 (財團法人)</span> <span class="category-tag" style="background:#10b981; color:#fff;">醫療法人 (社團法人)</span> <span class="category-tag" style="background:#f43f5e; color:#fff;">法人附設醫療機構</span> <span class="category-tag" style="background:#8b5cf6; color:#fff;">私立醫療機構</span>
+    </div><!-- Game Area: two columns -->
+    <div class="flex flex-col lg:flex-row gap-5"><!-- Left: Hospital cards with drop zones -->
+     <div class="flex-1" id="hospital-list"></div><!-- Right: Draggable classification tags -->
+     <div class="lg:w-64 w-full">
+      <div class="sticky top-20">
+       <div class="mb-3 flex items-center gap-2"><i data-lucide="tag" style="width:16px;height:16px;color:#6366f1;"></i> <span class="text-sm font-semibold" style="color:#e2e8f0;">法律分類標籤</span>
+       </div>
+       <div id="tag-pool" class="flex flex-wrap gap-2 p-3 rounded-xl" style="background:#1e293b; border:1px dashed #334155; min-height: 60px;">
+       </div>
+       <p class="text-xs mt-2" style="color:#64748b;">拖放標籤到左側醫院欄位中</p>
+      </div>
+     </div>
+    </div><!-- Submit Button -->
+    <div class="mt-6 flex justify-center" id="submit-area"><button id="submit-btn" onclick="submitAnswers()" disabled class="px-8 py-3 rounded-xl font-bold text-base transition-all disabled:opacity-40 disabled:cursor-not-allowed" style="background:#6366f1; color:#fff;"> <span class="flex items-center gap-2"> <i data-lucide="check-circle" style="width:18px;height:18px;"></i> <span id="submit-btn-text">送出答案</span> </span> </button>
+    </div><!-- Results overlay (hidden initially) -->
+    <div id="results-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);">
+     <div id="results-card" class="w-full max-w-md mx-4 rounded-2xl p-6 text-center" style="background:#1e293b; border:1px solid #334155;">
+      <div id="score-circle" class="w-28 h-28 mx-auto rounded-full flex flex-col items-center justify-center mb-4 score-reveal" style="border:4px solid #6366f1;"><span id="score-pct" class="text-3xl font-black" style="color:#f1f5f9;">0%</span> <span class="text-xs" style="color:#94a3b8;">答對率</span>
+      </div>
+      <p id="score-msg" class="text-lg font-bold mb-1" style="color:#e2e8f0;"></p>
+      <p id="score-detail" class="text-sm mb-5" style="color:#94a3b8;"></p>
+      <div class="flex gap-3 justify-center"><button onclick="showDetailedResults()" class="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all" style="background:#334155; color:#e2e8f0;"> <span class="flex items-center gap-1.5"><i data-lucide="list" style="width:14px;height:14px;"></i> 查看詳細</span> </button> <button onclick="resetGame()" class="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all" style="background:#6366f1; color:#fff;"> <span class="flex items-center gap-1.5"><i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> 再玩一次</span> </button>
+      </div>
+     </div>
+    </div>
+   </main>
+  </div>
+  <script>
+  // Data
+  const hospitals = [
+    { id: 1, location: "新北投", name: "三軍總醫院北投分院", answer: "公立醫療機構" },
+    { id: 2, location: "石牌", name: "臺北榮民總醫院", answer: "公立醫療機構" },
+    { id: 3, location: "石牌", name: "振興醫院", answer: "醫療法人 (財團法人)" },
+    { id: 4, location: "芝山", name: "北市聯醫（陽明院區）", answer: "公立醫療機構" },
+    { id: 5, location: "士林", name: "新光吳火獅紀念醫院", answer: "醫療法人 (財團法人)" },
+    { id: 6, location: "雙連", name: "馬偕紀念醫院（總院）", answer: "醫療法人 (財團法人)" },
+    { id: 7, location: "台北車站", name: "北市聯醫（中興院區）", answer: "公立醫療機構" },
+    { id: 8, location: "台大醫院", name: "台大醫院（總院）", answer: "公立醫療機構" },
+    { id: 9, location: "中正紀念堂", name: "北市聯醫（婦幼院區）", answer: "公立醫療機構" },
+    { id: 10, location: "信義安和", name: "國泰綜合醫院", answer: "醫療法人 (財團法人)" },
+    { id: 11, location: "象山", name: "臺北醫學大學附設醫院", answer: "法人附設醫療機構" },
+    { id: 12, location: "高雄市", name: "阮綜合醫院", answer: "醫療法人 (社團法人)" },
+    { id: 13, location: "台中市", name: "澄清醫院", answer: "醫療法人 (社團法人)" },
+    { id: 14, location: "桃園市", name: "天成醫院", answer: "醫療法人 (社團法人)" },
+    { id: 15, location: "台北市松山區", name: "博仁綜合醫院", answer: "私立醫療機構" },
+    { id: 16, location: "桃園市平鎮區", name: "秉坤婦幼醫院", answer: "私立醫療機構" },
+  ];
+
+  const categoryColors = {
+    "公立醫療機構": { bg: "#6366f1", text: "#fff" },
+    "醫療法人 (財團法人)": { bg: "#f59e0b", text: "#1a1a2e" },
+    "醫療法人 (社團法人)": { bg: "#10b981", text: "#fff" },
+    "法人附設醫療機構": { bg: "#f43f5e", text: "#fff" },
+    "私立醫療機構": { bg: "#8b5cf6", text: "#fff" },
+  };
+
+  let userAnswers = {};
+  let submitted = false;
+  let shuffledTags = [];
+
+  function buildTags() {
+    const tags = hospitals.map(h => ({ id: h.id, label: h.answer }));
+    // Shuffle
+    for (let i = tags.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [tags[i], tags[j]] = [tags[j], tags[i]];
+    }
+    shuffledTags = tags;
+  }
+
+  function renderHospitalList() {
+    const container = document.getElementById('hospital-list');
+    container.innerHTML = '';
+    // Shuffle hospital display order
+    const shuffled = [...hospitals];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    shuffled.forEach((h, idx) => {
+      const card = document.createElement('div');
+      card.className = 'flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 p-3 rounded-xl mb-2 fade-up';
+      card.style.cssText = `background:#1e293b; border:1px solid #334155; animation-delay:${idx * 0.03}s; opacity:0; animation-fill-mode:forwards;`;
+      card.innerHTML = `
+        <div class="flex items-center gap-2 sm:w-56 shrink-0">
+          <span class="text-xs px-2 py-0.5 rounded-md font-medium" style="background:#334155; color:#94a3b8;">${h.location}</span>
+          <span class="text-sm font-semibold truncate" style="color:#e2e8f0;">${h.name}</span>
+        </div>
+        <div class="flex-1">
+          <div class="drop-zone rounded-lg px-3 py-2 flex items-center gap-2" id="drop-${h.id}"
+            style="border:2px dashed #334155; min-height:40px;"
+            ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"
+            ondrop="handleDrop(event, ${h.id})" data-hospital-id="${h.id}">
+            <span class="drop-placeholder text-xs" style="color:#4a5568;">拖放法律分類到此處</span>
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+
+      // Touch support for drop zones
+      const dropZone = card.querySelector('.drop-zone');
+      dropZone.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+    });
+  }
+
+  function renderTagPool() {
+    const pool = document.getElementById('tag-pool');
+    pool.innerHTML = '';
+    shuffledTags.forEach((tag) => {
+      if (Object.values(userAnswers).find(a => a.tagId === tag.id)) return;
+      const el = createTagElement(tag);
+      pool.appendChild(el);
+    });
+  }
+
+  function createTagElement(tag) {
+    const colors = categoryColors[tag.label] || { bg: '#6366f1', text: '#fff' };
+    const el = document.createElement('div');
+    el.className = 'card-item inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold';
+    el.style.cssText = `background:${colors.bg}; color:${colors.text}; touch-action:none;`;
+    el.draggable = true;
+    el.dataset.tagId = tag.id;
+    el.dataset.label = tag.label;
+    el.textContent = tag.label;
+
+    el.addEventListener('dragstart', (e) => {
+      el.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', JSON.stringify({ tagId: tag.id, label: tag.label }));
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    el.addEventListener('dragend', () => el.classList.remove('dragging'));
+
+    // Touch drag support
+    let touchClone = null;
+    let currentDropTarget = null;
+    el.addEventListener('touchstart', (e) => {
+      const touch = e.touches[0];
+      touchClone = el.cloneNode(true);
+      touchClone.style.position = 'fixed';
+      touchClone.style.zIndex = '9999';
+      touchClone.style.pointerEvents = 'none';
+      touchClone.style.opacity = '0.85';
+      touchClone.style.transform = 'scale(1.08)';
+      touchClone.style.left = (touch.clientX - 40) + 'px';
+      touchClone.style.top = (touch.clientY - 16) + 'px';
+      document.body.appendChild(touchClone);
+      el.style.opacity = '0.3';
+    }, { passive: true });
+
+    el.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (!touchClone) return;
+      const touch = e.touches[0];
+      touchClone.style.left = (touch.clientX - 40) + 'px';
+      touchClone.style.top = (touch.clientY - 16) + 'px';
+
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      const dropZone = target?.closest?.('.drop-zone');
+
+      if (currentDropTarget && currentDropTarget !== dropZone) {
+        currentDropTarget.classList.remove('drag-over');
+      }
+      if (dropZone) {
+        dropZone.classList.add('drag-over');
+        currentDropTarget = dropZone;
+      } else {
+        currentDropTarget = null;
+      }
+    }, { passive: false });
+
+    el.addEventListener('touchend', (e) => {
+      if (touchClone) {
+        document.body.removeChild(touchClone);
+        touchClone = null;
+      }
+      el.style.opacity = '1';
+
+      if (currentDropTarget) {
+        currentDropTarget.classList.remove('drag-over');
+        const hospitalId = parseInt(currentDropTarget.dataset.hospitalId);
+        if (hospitalId) {
+          placeTag(hospitalId, { tagId: tag.id, label: tag.label });
+        }
+        currentDropTarget = null;
+      }
+    }, { passive: true });
+
+    return el;
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    e.currentTarget.classList.add('drag-over');
+  }
+
+  function handleDragLeave(e) {
+    e.currentTarget.classList.remove('drag-over');
+  }
+
+  function handleDrop(e, hospitalId) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
+    try {
+      const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+      placeTag(hospitalId, data);
+    } catch (err) {}
+  }
+
+  function placeTag(hospitalId, data) {
+    // If this drop zone already has a tag, return it to pool
+    if (userAnswers[hospitalId]) {
+      delete userAnswers[hospitalId];
+    }
+
+    // If this tag was placed elsewhere, remove it
+    Object.keys(userAnswers).forEach(key => {
+      if (userAnswers[key].tagId === data.tagId) {
+        delete userAnswers[key];
+        const oldDrop = document.getElementById(`drop-${key}`);
+        if (oldDrop) {
+          oldDrop.innerHTML = '<span class="drop-placeholder text-xs" style="color:#4a5568;">拖放法律分類到此處</span>';
+          oldDrop.classList.remove('filled');
+          oldDrop.style.borderStyle = 'dashed';
+        }
+      }
+    });
+
+    userAnswers[hospitalId] = { tagId: data.tagId, label: data.label };
+
+    // Update drop zone
+    const dropZone = document.getElementById(`drop-${hospitalId}`);
+    const colors = categoryColors[data.label] || { bg: '#6366f1', text: '#fff' };
+    dropZone.innerHTML = '';
+    dropZone.classList.add('filled');
+    dropZone.style.borderStyle = 'solid';
+    dropZone.style.borderColor = colors.bg;
+
+    const tagInZone = document.createElement('div');
+    tagInZone.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold cursor-pointer';
+    tagInZone.style.cssText = `background:${colors.bg}; color:${colors.text};`;
+    tagInZone.innerHTML = `${data.label} <span style="opacity:0.7; margin-left:4px;">✕</span>`;
+    tagInZone.onclick = () => removeTag(hospitalId);
+    dropZone.appendChild(tagInZone);
+
+    renderTagPool();
+    updateProgress();
+  }
+
+  function removeTag(hospitalId) {
+    if (submitted) return;
+    delete userAnswers[hospitalId];
+    const dropZone = document.getElementById(`drop-${hospitalId}`);
+    if (dropZone) {
+      dropZone.innerHTML = '<span class="drop-placeholder text-xs" style="color:#4a5568;">拖放法律分類到此處</span>';
+      dropZone.classList.remove('filled');
+      dropZone.style.borderStyle = 'dashed';
+      dropZone.style.borderColor = '#334155';
+    }
+    renderTagPool();
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const count = Object.keys(userAnswers).length;
+    document.getElementById('progress-text').textContent = `${count} / ${hospitals.length}`;
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = count < hospitals.length;
+    if (count === hospitals.length) {
+      btn.style.background = '#6366f1';
+      btn.style.boxShadow = '0 0 20px rgba(99,102,241,0.4)';
+    } else {
+      btn.style.boxShadow = 'none';
+    }
+  }
+
+  function submitAnswers() {
+    if (submitted) return;
+    submitted = true;
+
+    let correct = 0;
+    hospitals.forEach(h => {
+      const ua = userAnswers[h.id];
+      if (ua && ua.label === h.answer) correct++;
+    });
+
+    const pct = Math.round((correct / hospitals.length) * 100);
+
+    // Show overlay
+    const overlay = document.getElementById('results-overlay');
+    overlay.classList.remove('hidden');
+
+    const scorePct = document.getElementById('score-pct');
+    const scoreMsg = document.getElementById('score-msg');
+    const scoreDetail = document.getElementById('score-detail');
+    const scoreCircle = document.getElementById('score-circle');
+
+    scorePct.textContent = pct + '%';
+    scoreDetail.textContent = `${hospitals.length} 題中答對 ${correct} 題`;
+
+    if (pct === 100) {
+      scoreMsg.textContent = '🎉 滿分！太厲害了！';
+      scoreCircle.style.borderColor = '#10b981';
+    } else if (pct >= 75) {
+      scoreMsg.textContent = '👏 表現很棒！';
+      scoreCircle.style.borderColor = '#6366f1';
+    } else if (pct >= 50) {
+      scoreMsg.textContent = '💪 還不錯，繼續加油！';
+      scoreCircle.style.borderColor = '#f59e0b';
+    } else {
+      scoreMsg.textContent = '📚 再多練習一下吧！';
+      scoreCircle.style.borderColor = '#f43f5e';
+    }
+
+    // Animate score circle
+    scoreCircle.classList.remove('score-reveal');
+    void scoreCircle.offsetWidth;
+    scoreCircle.classList.add('score-reveal');
+
+    lucide.createIcons();
+  }
+
+  function showDetailedResults() {
+    document.getElementById('results-overlay').classList.add('hidden');
+
+    // Mark each drop zone as correct/wrong
+    hospitals.forEach(h => {
+      const dropZone = document.getElementById(`drop-${h.id}`);
+      if (!dropZone) return;
+      const ua = userAnswers[h.id];
+      const isCorrect = ua && ua.label === h.answer;
+
+      dropZone.innerHTML = '';
+
+      if (isCorrect) {
+        dropZone.style.borderColor = '#10b981';
+        dropZone.style.borderStyle = 'solid';
+        dropZone.style.background = 'rgba(16,185,129,0.08)';
+        const colors = categoryColors[ua.label];
+        dropZone.innerHTML = `
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold result-correct" style="background:${colors.bg}; color:${colors.text};">
+            <i data-lucide="check" style="width:12px;height:12px;"></i> ${ua.label}
+          </div>`;
+      } else {
+        dropZone.style.borderColor = '#f43f5e';
+        dropZone.style.borderStyle = 'solid';
+        dropZone.style.background = 'rgba(244,63,94,0.08)';
+        const correctColors = categoryColors[h.answer];
+        const wrongLabel = ua ? ua.label : '未作答';
+        dropZone.innerHTML = `
+          <div class="flex flex-wrap items-center gap-2 result-wrong">
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold" style="background:rgba(244,63,94,0.2); color:#fca5a5; text-decoration: line-through;">${wrongLabel}</span>
+            <span style="color:#64748b;">→</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold" style="background:${correctColors.bg}; color:${correctColors.text};">
+              <i data-lucide="check" style="width:10px;height:10px;"></i> ${h.answer}
+            </span>
+          </div>`;
+      }
+    });
+
+    // Replace submit with reset
+    document.getElementById('submit-area').innerHTML = `
+      <button onclick="resetGame()" class="px-8 py-3 rounded-xl font-bold text-base transition-all" style="background:#6366f1; color:#fff;">
+        <span class="flex items-center gap-2">
+          <i data-lucide="refresh-cw" style="width:18px;height:18px;"></i>
+          再玩一次
+        </span>
+      </button>`;
+
+    lucide.createIcons();
+  }
+
+  function resetGame() {
+    submitted = false;
+    userAnswers = {};
+    document.getElementById('results-overlay').classList.add('hidden');
+    document.getElementById('submit-area').innerHTML = `
+      <button id="submit-btn" onclick="submitAnswers()" disabled
+        class="px-8 py-3 rounded-xl font-bold text-base transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        style="background:#6366f1; color:#fff;">
+        <span class="flex items-center gap-2">
+          <i data-lucide="check-circle" style="width:18px;height:18px;"></i>
+          <span id="submit-btn-text">${currentConfig.submit_button_text || defaultConfig.submit_button_text}</span>
+        </span>
+      </button>`;
+    buildTags();
+    renderHospitalList();
+    renderTagPool();
+    updateProgress();
+    lucide.createIcons();
+  }
+
+  // Element SDK
+  const defaultConfig = {
+    game_title: "醫院法律分類配對遊戲",
+    submit_button_text: "送出答案",
+    background_color: "#0f172a",
+    surface_color: "#1e293b",
+    text_color: "#e2e8f0",
+    primary_action: "#6366f1",
+    secondary_action: "#334155",
+    font_family: "Noto Sans TC",
+    font_size: 14
+  };
+
+  let currentConfig = { ...defaultConfig };
+
+  function applyConfig(config) {
+    currentConfig = config;
+    const bg = config.background_color || defaultConfig.background_color;
+    const surface = config.surface_color || defaultConfig.surface_color;
+    const textCol = config.text_color || defaultConfig.text_color;
+    const primary = config.primary_action || defaultConfig.primary_action;
+    const secondary = config.secondary_action || defaultConfig.secondary_action;
+    const fontFamily = config.font_family || defaultConfig.font_family;
+    const baseSize = config.font_size || defaultConfig.font_size;
+
+    document.documentElement.style.setProperty('--primary-action', primary);
+
+    const wrapper = document.getElementById('app-wrapper');
+    wrapper.style.background = bg;
+
+    // Header
+    const header = document.querySelector('header');
+    header.style.background = `rgba(${hexToRgb(bg)}, 0.95)`;
+    header.style.borderBottomColor = surface;
+
+    const title = document.getElementById('game-title');
+    title.textContent = config.game_title || defaultConfig.game_title;
+    title.style.color = textCol;
+    title.style.fontFamily = `${fontFamily}, sans-serif`;
+    title.style.fontSize = `${baseSize * 1.3}px`;
+
+    const badge = document.getElementById('progress-badge');
+    badge.style.background = surface;
+    badge.style.color = config.text_color ? adjustAlpha(textCol, 0.6) : '#94a3b8';
+
+    // Header icon
+    const headerIcon = header.querySelector('.rounded-lg');
+    if (headerIcon) headerIcon.style.background = primary;
+
+    // Instructions
+    const instr = document.getElementById('instructions');
+    if (instr) {
+      instr.style.background = surface;
+      instr.style.borderColor = secondary;
+      const infoIcon = instr.querySelector('[data-lucide="info"]');
+      if (infoIcon) infoIcon.style.color = primary;
+    }
+
+    // Submit button
+    const submitBtn = document.getElementById('submit-btn');
+    if (submitBtn) {
+      submitBtn.style.background = primary;
+      const btnText = document.getElementById('submit-btn-text');
+      if (btnText) btnText.textContent = config.submit_button_text || defaultConfig.submit_button_text;
+    }
+
+    // Font on body
+    document.body.style.fontFamily = `${fontFamily}, sans-serif`;
+    document.body.style.fontSize = `${baseSize}px`;
+
+    // Hospital cards
+    document.querySelectorAll('#hospital-list > div').forEach(card => {
+      card.style.background = surface;
+      card.style.borderColor = secondary;
+      const nameEl = card.querySelector('.font-semibold.truncate');
+      if (nameEl) {
+        nameEl.style.color = textCol;
+        nameEl.style.fontFamily = `${fontFamily}, sans-serif`;
+      }
+    });
+  }
+
+  function hexToRgb(hex) {
+    const r = parseInt(hex.slice(1,3), 16);
+    const g = parseInt(hex.slice(3,5), 16);
+    const b = parseInt(hex.slice(5,7), 16);
+    return `${r},${g},${b}`;
+  }
+
+  function adjustAlpha(hex, alpha) {
+    return `rgba(${hexToRgb(hex)}, ${alpha})`;
+  }
+
+  window.elementSdk.init({
+    defaultConfig,
+    onConfigChange: async (config) => {
+      applyConfig(config);
+    },
+    mapToCapabilities: (config) => ({
+      recolorables: [
+        { get: () => config.background_color || defaultConfig.background_color, set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); }},
+        { get: () => config.surface_color || defaultConfig.surface_color, set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); }},
+        { get: () => config.text_color || defaultConfig.text_color, set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); }},
+        { get: () => config.primary_action || defaultConfig.primary_action, set: (v) => { config.primary_action = v; window.elementSdk.setConfig({ primary_action: v }); }},
+        { get: () => config.secondary_action || defaultConfig.secondary_action, set: (v) => { config.secondary_action = v; window.elementSdk.setConfig({ secondary_action: v }); }},
+      ],
+      borderables: [],
+      fontEditable: {
+        get: () => config.font_family || defaultConfig.font_family,
+        set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); }
+      },
+      fontSizeable: {
+        get: () => config.font_size || defaultConfig.font_size,
+        set: (v) => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); }
+      }
+    }),
+    mapToEditPanelValues: (config) => new Map([
+      ["game_title", config.game_title || defaultConfig.game_title],
+      ["submit_button_text", config.submit_button_text || defaultConfig.submit_button_text]
+    ])
+  });
+
+  // Initialize game
+  buildTags();
+  renderHospitalList();
+  renderTagPool();
+  updateProgress();
+  lucide.createIcons();
+</script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ddbfd21b53d3339',t:'MTc3Mzc1MDQxNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
