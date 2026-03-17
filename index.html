@@ -39,50 +39,42 @@
                 <div class="lg:col-span-2 p-5 rounded-2xl bg-[#1e293b] border border-[#334155] flex gap-4">
                     <i data-lucide="info" class="text-indigo-400 shrink-0"></i>
                     <div>
-                        <p class="text-sm font-bold text-slate-200">挑戰目標</p>
-                        <p class="text-xs text-slate-400 mt-1">請將右側的 <span class="text-indigo-300">法律分類標籤</span> 拖放到對應的醫院欄位中。全數完成後按下送出查看正確率！</p>
+                        <p class="text-sm font-bold text-slate-200">教學模式：標籤用過即消失</p>
+                        <p class="text-xs text-slate-400 mt-1">將右側標籤拖至左側。標籤被使用後會從右側清單移除，若將答案刪除，標籤會自動回到右側。</p>
                     </div>
-                </div>
-                <div class="flex flex-wrap gap-2 content-center">
-                    <span class="text-[10px] px-2 py-1 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">公立: 醫療法§3</span>
-                    <span class="text-[10px] px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">財團法人: 醫療法§5</span>
-                    <span class="text-[10px] px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">社團法人: 醫療法§5</span>
                 </div>
             </div>
 
             <div class="flex flex-col lg:flex-row gap-8">
                 <div class="flex-1 space-y-3" id="hospital-list"></div>
-
                 <div class="lg:w-72 w-full">
                     <div class="sticky top-24 p-5 rounded-2xl bg-[#1e293b] border border-[#334155]">
                         <div class="flex items-center gap-2 mb-4 border-b border-slate-700 pb-3">
                             <i data-lucide="tag" class="w-4 h-4 text-indigo-400"></i>
-                            <span class="text-sm font-bold">可用法律分類標籤</span>
+                            <span class="text-sm font-bold">待分配標籤</span>
                         </div>
                         <div id="tag-pool" class="flex flex-wrap gap-2 min-h-[100px]"></div>
-                        <p class="text-[10px] text-slate-500 mt-4 text-center italic">拖曳標籤到左側目標區</p>
                     </div>
                 </div>
             </div>
 
             <div class="mt-12 flex justify-center pb-20">
                 <button id="submit-btn" onclick="submitAnswers()" disabled 
-                    class="px-12 py-4 rounded-2xl font-black text-lg transition-all transform hover:scale-105 disabled:opacity-30 disabled:hover:scale-100 bg-indigo-600 shadow-xl shadow-indigo-600/30">
+                    class="px-12 py-4 rounded-2xl font-black text-lg transition-all transform hover:scale-105 disabled:opacity-30 bg-indigo-600 shadow-xl shadow-indigo-600/30">
                     送出驗證
                 </button>
             </div>
         </main>
 
         <div id="results-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div class="bg-[#1e293b] border border-[#334155] w-full max-w-md rounded-3xl p-8 text-center shadow-2xl">
+            <div class="bg-[#1e293b] border border-[#334155] w-full max-w-md rounded-3xl p-8 text-center">
                 <div id="score-circle" class="w-32 h-32 mx-auto rounded-full border-8 border-indigo-500 flex flex-col items-center justify-center mb-6">
-                    <span id="score-pct" class="text-4xl font-black italic">0%</span>
+                    <span id="score-pct" class="text-4xl font-black">0%</span>
                 </div>
                 <h2 id="score-msg" class="text-2xl font-bold mb-2"></h2>
-                <p id="score-detail" class="text-slate-400 mb-8"></p>
-                <div class="grid grid-cols-2 gap-4">
-                    <button onclick="hideOverlay()" class="py-3 rounded-xl bg-slate-700 font-bold hover:bg-slate-600 transition-colors">查看對錯</button>
-                    <button onclick="resetGame()" class="py-3 rounded-xl bg-indigo-600 font-bold hover:bg-indigo-500 transition-colors">重新開始</button>
+                <div class="grid grid-cols-2 gap-4 mt-8">
+                    <button onclick="hideOverlay()" class="py-3 rounded-xl bg-slate-700 font-bold">查看詳情</button>
+                    <button onclick="resetGame()" class="py-3 rounded-xl bg-indigo-600 font-bold">重新開始</button>
                 </div>
             </div>
         </div>
@@ -99,182 +91,4 @@
         { id: 7, location: "台北車站", name: "北市聯醫（中興院區）", answer: "公立醫療機構" },
         { id: 8, location: "台大醫院", name: "台大醫院（總院）", answer: "公立醫療機構" },
         { id: 9, location: "中正紀念堂", name: "北市聯醫（婦幼院區）", answer: "公立醫療機構" },
-        { id: 10, location: "信義安和", name: "國泰綜合醫院", answer: "醫療法人 (財團法人)" },
-        { id: 11, location: "象山", name: "臺北醫學大學附設醫院", answer: "法人附設醫療機構" },
-        { id: 12, location: "高雄市", name: "阮綜合醫院", answer: "醫療法人 (社團法人)" },
-        { id: 13, location: "台中市", name: "澄清醫院", answer: "醫療法人 (社團法人)" },
-        { id: 14, location: "桃園市", name: "天成醫院", answer: "醫療法人 (社團法人)" },
-        { id: 15, location: "松山區", name: "博仁綜合醫院", answer: "私立醫療機構" },
-        { id: 16, location: "平鎮區", name: "秉坤婦幼醫院", answer: "私立醫療機構" }
-    ];
-
-    const colors = {
-        "公立醫療機構": "bg-indigo-500 text-white",
-        "醫療法人 (財團法人)": "bg-amber-500 text-slate-900",
-        "醫療法人 (社團法人)": "bg-emerald-500 text-white",
-        "法人附設醫療機構": "bg-rose-500 text-white",
-        "私立醫療機構": "bg-violet-500 text-white"
-    };
-
-    let userAnswers = {};
-    let submitted = false;
-
-    // 初始化：打亂題目順序
-    function init() {
-        renderHospitals();
-        renderTags();
-        lucide.createIcons();
-    }
-
-    function renderHospitals() {
-        const list = document.getElementById('hospital-list');
-        list.innerHTML = '';
-        const shuffled = [...hospitals].sort(() => Math.random() - 0.5);
-        
-        shuffled.forEach(h => {
-            const div = document.createElement('div');
-            div.className = "p-4 rounded-2xl bg-[#1e293b] border border-[#334155] flex flex-col sm:flex-row sm:items-center gap-4";
-            div.innerHTML = `
-                <div class="sm:w-64 shrink-0">
-                    <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">${h.location}</div>
-                    <div class="text-sm font-bold text-slate-200">${h.name}</div>
-                </div>
-                <div class="flex-1 drop-zone border-2 border-dashed border-slate-700 rounded-xl flex items-center px-4" 
-                     id="zone-${h.id}" data-id="${h.id}" ondragover="allowDrop(event)" ondrop="handleDrop(event)">
-                    <span class="text-xs text-slate-600">放置分類標籤於此...</span>
-                </div>
-            `;
-            list.appendChild(div);
-        });
-    }
-
-    function renderTags() {
-        const pool = document.getElementById('tag-pool');
-        pool.innerHTML = '';
-        
-        // 根據答案清單產生對應數量的標籤
-        const usedTagIds = Object.values(userAnswers).map(a => a.tagId);
-        hospitals.forEach(h => {
-            if (!usedTagIds.includes(h.id)) {
-                const tag = document.createElement('div');
-                tag.className = `card-item px-3 py-2 rounded-lg text-xs font-bold shadow-sm ${colors[h.answer]}`;
-                tag.draggable = true;
-                tag.id = `tag-${h.id}`;
-                tag.textContent = h.answer;
-                tag.dataset.label = h.answer;
-                tag.dataset.id = h.id;
-                tag.ondragstart = (e) => e.dataTransfer.setData("text", h.id);
-                pool.appendChild(tag);
-            }
-        });
-    }
-
-    function allowDrop(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
-
-    function handleDrop(e) {
-        e.preventDefault();
-        const zone = e.currentTarget;
-        zone.classList.remove('drag-over');
-        const hospitalId = zone.dataset.id;
-        const tagId = e.dataTransfer.getData("text");
-        
-        placeTag(hospitalId, tagId);
-    }
-
-    function placeTag(hospitalId, tagId) {
-        if (submitted) return;
-
-        // 如果該標籤原本在別的格子，先清除原格子
-        for (let hid in userAnswers) {
-            if (userAnswers[hid].tagId == tagId) delete userAnswers[hid];
-        }
-
-        const tagData = hospitals.find(h => h.id == tagId);
-        userAnswers[hospitalId] = { tagId: tagId, label: tagData.answer };
-
-        updateUI();
-    }
-
-    function updateUI() {
-        // 重繪格子內容
-        hospitals.forEach(h => {
-            const zone = document.getElementById(`zone-${h.id}`);
-            if (userAnswers[h.id]) {
-                const label = userAnswers[h.id].label;
-                zone.innerHTML = `
-                    <div class="flex items-center justify-between w-full group">
-                        <span class="px-3 py-1.5 rounded-lg text-[11px] font-black ${colors[label]}">${label}</span>
-                        <button onclick="removeAnswer(${h.id})" class="text-slate-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <i data-lucide="x-circle" class="w-4 h-4"></i>
-                        </button>
-                    </div>`;
-                zone.classList.remove('border-dashed');
-                zone.classList.add('border-solid', 'border-indigo-500/50');
-            } else {
-                zone.innerHTML = `<span class="text-xs text-slate-600">放置分類標籤於此...</span>`;
-                zone.classList.add('border-dashed');
-                zone.classList.remove('border-solid', 'border-indigo-500/50');
-            }
-        });
-
-        const count = Object.keys(userAnswers).length;
-        document.getElementById('progress-text').textContent = `${count} / ${hospitals.length}`;
-        document.getElementById('submit-btn').disabled = count < hospitals.length;
-        
-        renderTags();
-        lucide.createIcons();
-    }
-
-    function removeAnswer(hid) {
-        delete userAnswers[hid];
-        updateUI();
-    }
-
-    function submitAnswers() {
-        submitted = true;
-        let score = 0;
-        hospitals.forEach(h => {
-            if (userAnswers[h.id] && userAnswers[h.id].label === h.answer) score++;
-        });
-
-        const pct = Math.round((score / hospitals.length) * 100);
-        
-        // 顯示彈窗
-        document.getElementById('results-overlay').classList.remove('hidden');
-        document.getElementById('score-pct').textContent = pct + '%';
-        document.getElementById('score-detail').textContent = `16 題中答對 ${score} 題`;
-        
-        const msg = document.getElementById('score-msg');
-        if (pct === 100) msg.textContent = "完璧！專業級別！";
-        else if (pct >= 70) msg.textContent = "非常優秀！";
-        else msg.textContent = "再接再厲，多觀察法規差異！";
-    }
-
-    function hideOverlay() {
-        document.getElementById('results-overlay').classList.add('hidden');
-        // 標記紅綠顏色
-        hospitals.forEach(h => {
-            const zone = document.getElementById(`zone-${h.id}`);
-            const isCorrect = userAnswers[h.id].label === h.answer;
-            zone.style.borderColor = isCorrect ? "#10b981" : "#f43f5e";
-            if (!isCorrect) {
-                const correctHint = document.createElement('div');
-                correctHint.className = "text-[10px] text-rose-400 mt-1";
-                correctHint.textContent = `正解：${h.answer}`;
-                zone.parentElement.appendChild(correctHint);
-            }
-        });
-    }
-
-    function resetGame() {
-        userAnswers = {};
-        submitted = false;
-        document.getElementById('results-overlay').classList.add('hidden');
-        init();
-        document.getElementById('progress-text').textContent = `0 / 16`;
-    }
-
-    window.onload = init;
-</script>
-</body>
-</html>
+        { id: 10, location: "信義安和", name: "
